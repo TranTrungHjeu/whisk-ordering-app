@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { userMock } from "../data/products"; // Keep user mock for now
+import { Link } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
 import CategoryFilter from "../components/CategoryFilter";
 import { Medal, Gift } from "@phosphor-icons/react";
@@ -12,6 +12,15 @@ export default function Home() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
+
+  // Check if user is logged in
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -82,40 +91,51 @@ export default function Home() {
       <section className="welcome-banner">
         <div className="welcome-content">
           <div className="welcome-text">
-            <p className="welcome-greeting">Xin chào, {userMock.name}!</p>
+            <p className="welcome-greeting">
+              {user ? `Xin chào, ${user.name}!` : "Chào mừng đến WHISK!"}
+            </p>
             <h1 className="welcome-title">Hôm nay bạn muốn uống gì?</h1>
           </div>
-          <div className="points-card">
-            <div className="points-icon">
-              <Gift size={22} weight="light" />
+          {user ? (
+            <div className="points-card">
+              <div className="points-icon">
+                <Gift size={22} weight="light" />
+              </div>
+              <div className="points-info">
+                <span className="points-value">
+                  {user.points?.toLocaleString() || 0}
+                </span>
+                <span className="points-label">điểm</span>
+              </div>
             </div>
-            <div className="points-info">
-              <span className="points-value">
-                {userMock.points.toLocaleString()}
-              </span>
-              <span className="points-label">điểm</span>
-            </div>
-          </div>
+          ) : (
+            <Link to="/login" className="login-prompt-btn">
+              Đăng nhập
+            </Link>
+          )}
         </div>
 
-        {/* Tier Progress */}
-        <div className="tier-progress">
-          <div className="tier-info">
-            <span className="tier-badge">
-              <Medal size={14} weight="fill" />
-              {userMock.tier}
-            </span>
-            <span className="tier-next">
-              Còn {userMock.pointsToNextTier} điểm để lên {userMock.nextTier}
-            </span>
+        {/* Tier Progress - Only show if logged in */}
+        {user && (
+          <div className="tier-progress">
+            <div className="tier-info">
+              <span className="tier-badge">
+                <Medal size={14} weight="fill" />
+                {user.tier || "Silver"}
+              </span>
+              <span className="tier-next">
+                Còn {user.points_to_next_tier || 0} điểm để lên{" "}
+                {user.next_tier || "Gold"}
+              </span>
+            </div>
+            <div className="tier-bar">
+              <div
+                className="tier-bar-fill"
+                style={{ width: `${user.tier_progress || 0}%` }}
+              />
+            </div>
           </div>
-          <div className="tier-bar">
-            <div
-              className="tier-bar-fill"
-              style={{ width: `${userMock.tierProgress}%` }}
-            />
-          </div>
-        </div>
+        )}
       </section>
 
       {/* Categories */}

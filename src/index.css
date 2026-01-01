@@ -308,7 +308,13 @@ img {
 
 .app-content {
   flex: 1;
-  padding-bottom: 80px;
+  padding-top: 80px; /* Space for fixed top header */
+  padding-bottom: 20px;
+}
+
+.app-content.no-padding {
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 /* Animation */

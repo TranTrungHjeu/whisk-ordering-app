@@ -11,35 +11,75 @@ import {
   Bag,
 } from "@phosphor-icons/react";
 import { useCart } from "../context/CartContext";
-import { userMock } from "../data/products";
+import api from "../services/api";
 import "./Cart.css";
 
 export default function Cart() {
   const navigate = useNavigate();
   const { items, totalPrice, updateQuantity, removeItem, clearCart } =
     useCart();
+  const [isLoading, setIsLoading] = useState(false);
   const [pickupTime, setPickupTime] = useState("asap");
   const [usePoints, setUsePoints] = useState(false);
+
+  // Get user from localStorage, use mock as fallback for guest users
+  const storedUser = localStorage.getItem("user");
+  const user = storedUser ? JSON.parse(storedUser) : { points: 0 };
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat("vi-VN").format(price) + "đ";
   };
 
   const pointsDiscount = usePoints
-    ? Math.min(userMock.points * 10, totalPrice * 0.3)
+    ? Math.min(user.points * 10, totalPrice * 0.3)
     : 0;
   const earnedPoints = Math.floor((totalPrice - pointsDiscount) / 1000);
   const finalTotal = totalPrice - pointsDiscount;
 
-  const handleCheckout = () => {
-    clearCart();
-    navigate("/order-success", {
-      state: {
-        total: finalTotal,
-        earnedPoints,
-        usedPoints: usePoints ? Math.floor(pointsDiscount / 10) : 0,
-      },
-    });
+  const handleCheckout = async () => {
+    // Check if user is logged in
+    const storedUser = localStorage.getItem("user");
+
+    if (!storedUser) {
+      // Redirect to login page
+      navigate("/login", { state: { from: "/cart" } });
+      return;
+    }
+
+    const user = JSON.parse(storedUser);
+
+    setIsLoading(true);
+    try {
+      const orderData = {
+        userId: user.id,
+        items: items,
+        totalAmount: finalTotal,
+      };
+
+      const result = await api.createOrder(orderData);
+
+      // Update local user points immediately for UI feedback
+      const updatedUser = {
+        ...user,
+        points: (user.points || 0) + result.pointsEarned,
+      };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+
+      clearCart();
+      navigate("/order-success", {
+        state: {
+          total: finalTotal,
+          earnedPoints: result.pointsEarned,
+          usedPoints: usePoints ? Math.floor(pointsDiscount / 10) : 0,
+          orderId: result.orderId,
+        },
+      });
+    } catch (error) {
+      console.error("Checkout failed:", error);
+      alert("Đặt hàng thất bại. Vui lòng thử lại.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (items.length === 0) {
@@ -149,34 +189,36 @@ export default function Cart() {
         </div>
       </section>
 
-      {/* Use Points */}
-      <section className="checkout-section">
-        <div className="points-toggle">
-          <div className="points-toggle-info">
-            <Gift size={22} weight="light" className="points-icon" />
-            <div>
-              <span className="points-toggle-label">Dùng điểm tích lũy</span>
-              <span className="points-available">
-                {userMock.points.toLocaleString()} điểm khả dụng
-              </span>
+      {/* Use Points - Only show if user is logged in and has points */}
+      {user.points > 0 && (
+        <section className="checkout-section">
+          <div className="points-toggle">
+            <div className="points-toggle-info">
+              <Gift size={22} weight="light" className="points-icon" />
+              <div>
+                <span className="points-toggle-label">Dùng điểm tích lũy</span>
+                <span className="points-available">
+                  {user.points.toLocaleString()} điểm khả dụng
+                </span>
+              </div>
             </div>
+            <label className="toggle">
+              <input
+                type="checkbox"
+                checked={usePoints}
+                onChange={(e) => setUsePoints(e.target.checked)}
+              />
+              <span className="toggle-slider"></span>
+            </label>
           </div>
-          <label className="toggle">
-            <input
-              type="checkbox"
-              checked={usePoints}
-              onChange={(e) => setUsePoints(e.target.checked)}
-            />
-            <span className="toggle-slider"></span>
-          </label>
-        </div>
-        {usePoints && (
-          <div className="points-discount">
-            Giảm {formatPrice(pointsDiscount)} (
-            {Math.floor(pointsDiscount / 10)} điểm)
-          </div>
-        )}
-      </section>
+          {usePoints && (
+            <div className="points-discount">
+              Giảm {formatPrice(pointsDiscount)} (
+              {Math.floor(pointsDiscount / 10)} điểm)
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Order Summary */}
       <section className="order-summary">
@@ -202,9 +244,15 @@ export default function Cart() {
 
       {/* Checkout Button */}
       <div className="checkout-footer">
-        <button className="checkout-btn" onClick={handleCheckout}>
+        <button
+          className="checkout-btn"
+          onClick={handleCheckout}
+          disabled={isLoading}
+        >
           <CreditCard size={20} weight="light" />
-          Thanh toán {formatPrice(finalTotal)}
+          {isLoading
+            ? "Đang xử lý..."
+            : `Thanh toán ${formatPrice(finalTotal)}`}
         </button>
       </div>
     </div>

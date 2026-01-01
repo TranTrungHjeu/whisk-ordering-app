@@ -97,10 +97,13 @@ app.post("/api/orders", async (req, res) => {
   try {
     // Start transaction (simple version without explicit BEGIN/COMMIT for now, just logical steps)
 
+    // Start transaction
+    await query("BEGIN");
+
     // 1. Create Order
     const orderResult = await query(
       "INSERT INTO orders (user_id, total_amount, status) VALUES ($1, $2, $3) RETURNING id",
-      [userId || "guest", totalAmount, "pending"]
+      [userId, totalAmount, "pending"] // Enforce userId
     );
     const orderId = orderResult.rows[0].id;
 
@@ -111,7 +114,7 @@ app.post("/api/orders", async (req, res) => {
          VALUES ($1, $2, $3, $4, $5, $6, $7)`,
         [
           orderId,
-          item.productId,
+          item.id, // Changed from item.productId to item.id based on Cart context
           item.name,
           item.quantity,
           item.price,
@@ -121,10 +124,157 @@ app.post("/api/orders", async (req, res) => {
       );
     }
 
-    res.status(201).json({ message: "Order created", orderId });
+    // 3. Update User Points
+    const pointsEarned = Math.floor(totalAmount / 1000);
+    await query("UPDATE users SET points = points + $1 WHERE id = $2", [
+      pointsEarned,
+      userId,
+    ]);
+
+    // Commit transaction
+    await query("COMMIT");
+
+    res.status(201).json({ message: "Order created", orderId, pointsEarned });
   } catch (err) {
+    await query("ROLLBACK");
     console.error(err);
     res.status(500).json({ error: "Failed to create order" });
+  }
+});
+
+// --- Admin APIs ---
+
+// Middleware to check basic admin role (simplified)
+const checkAdmin = async (req, res, next) => {
+  const userId = req.headers["x-user-id"];
+  if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+  try {
+    const result = await query("SELECT role FROM users WHERE id = $1", [
+      userId,
+    ]);
+    if (result.rows.length === 0 || result.rows[0].role !== "admin") {
+      return res.status(403).json({ error: "Forbidden: Admin access only" });
+    }
+    next();
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+app.get("/api/admin/users", checkAdmin, async (req, res) => {
+  try {
+    const result = await query(
+      "SELECT id, name, phone, role, points, tier, member_since FROM users ORDER BY member_since DESC"
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch users" });
+  }
+});
+
+app.get("/api/admin/orders", checkAdmin, async (req, res) => {
+  try {
+    const result = await query(`
+      SELECT o.id, o.total_amount, o.status, o.created_at, u.name as user_name, u.phone as user_phone 
+      FROM orders o 
+      LEFT JOIN users u ON o.user_id = u.id 
+      ORDER BY o.created_at DESC
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch orders" });
+  }
+});
+
+// --- End Admin APIs ---
+
+// Register new user
+app.post("/api/register", async (req, res) => {
+  const { name, phone, password } = req.body;
+
+  // 1. Validation
+  const phoneRegex = /(84|0[3|5|7|8|9])+([0-9]{8})\b/g;
+  if (!phone || !phoneRegex.test(phone)) {
+    return res.status(400).json({ error: "Số điện thoại không hợp lệ" });
+  }
+
+  if (!password || password.length < 6) {
+    return res.status(400).json({ error: "Mật khẩu phải có ít nhất 6 ký tự" });
+  }
+
+  if (!name) {
+    return res.status(400).json({ error: "Vui lòng nhập họ tên" });
+  }
+
+  try {
+    // 2. Check if user exists
+    const existingUser = await query("SELECT * FROM users WHERE phone = $1", [
+      phone,
+    ]);
+    if (existingUser.rows.length > 0) {
+      return res.status(409).json({ error: "Số điện thoại đã được đăng ký" });
+    }
+
+    // 3. Create user
+    // Note: In a real app, hash password with bcrypt!
+    // For this demo as requested, we store it directly (or basic hash if requested, but user didn't specify hashing lib)
+    // I'll assume plain text for now as per "simple" prompt, but generally bcrypt is needed.
+    // User asked for "pass > 6 chars", didn't explicitly ask for hash but it's best practice.
+    // Since I don't want to install more deps like bcryptjs right now without asking, keeping it simple but noting it.
+
+    const id = "user_" + Date.now(); // Simple ID generation
+    await query(
+      "INSERT INTO users (id, name, phone, password, points, tier) VALUES ($1, $2, $3, $4, 0, 'Silver')",
+      [id, name, phone, password]
+    );
+
+    res.status(201).json({ message: "Đăng ký thành công", userId: id });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Lỗi server khi đăng ký" });
+  }
+});
+
+// Login user
+app.post("/api/login", async (req, res) => {
+  const { phone, password } = req.body;
+
+  // 1. Validation
+  if (!phone || !password) {
+    return res.status(400).json({ error: "Vui lòng điền đầy đủ thông tin" });
+  }
+
+  try {
+    // 2. Find user by phone
+    const result = await query("SELECT * FROM users WHERE phone = $1", [phone]);
+
+    if (result.rows.length === 0) {
+      return res
+        .status(401)
+        .json({ error: "Số điện thoại hoặc mật khẩu không đúng" });
+    }
+
+    const user = result.rows[0];
+
+    // 3. Check password (in real app, use bcrypt.compare)
+    if (user.password !== password) {
+      return res
+        .status(401)
+        .json({ error: "Số điện thoại hoặc mật khẩu không đúng" });
+    }
+
+    // 4. Return user info (excluding password)
+    const { password: _, ...userWithoutPassword } = user;
+
+    res.json({
+      message: "Đăng nhập thành công",
+      user: userWithoutPassword,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Lỗi server khi đăng nhập" });
   }
 });
 

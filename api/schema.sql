@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS users (
   id VARCHAR(255) PRIMARY KEY, -- Can use Auth provider ID or UUID
   name VARCHAR(255),
   phone VARCHAR(20),
+  password VARCHAR(255),
   points INTEGER DEFAULT 0,
   tier VARCHAR(50) DEFAULT 'Silver',
   member_since DATE DEFAULT CURRENT_DATE

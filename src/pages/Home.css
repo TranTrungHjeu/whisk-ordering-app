@@ -150,6 +150,26 @@
   transition: width 0.5s ease;
 }
 
+.login-prompt-btn {
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(12px);
+  color: var(--white);
+  padding: 10px 20px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-block;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.login-prompt-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
 /* Products Section */
 .products-section {
   padding: 0 var(--space-lg);
