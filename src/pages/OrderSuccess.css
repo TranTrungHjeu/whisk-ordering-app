@@ -1,0 +1,192 @@
+.order-success-page {
+  min-height: 100vh;
+  background: linear-gradient(
+    180deg,
+    var(--matcha-cream) 0%,
+    var(--white) 100%
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg);
+}
+
+.success-content {
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+/* Success Icon */
+.success-icon-wrapper {
+  margin-bottom: var(--space-lg);
+}
+
+.success-icon {
+  width: 96px;
+  height: 96px;
+  background: var(--matcha-primary);
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--white);
+  animation: scaleIn 0.5s ease, pulse 2s ease-in-out infinite;
+  animation-delay: 0s, 0.5s;
+}
+
+@keyframes scaleIn {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.success-title {
+  font-family: var(--font-heading);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: var(--space-xs);
+}
+
+.success-subtitle {
+  font-size: 15px;
+  color: var(--text-muted);
+  margin-bottom: var(--space-xl);
+}
+
+/* Order Card */
+.order-card {
+  background: var(--white);
+  border-radius: var(--radius-xl);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-md);
+  margin-bottom: var(--space-lg);
+  text-align: left;
+}
+
+.order-number {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: var(--space-md);
+  border-bottom: 1px dashed var(--border);
+  margin-bottom: var(--space-md);
+}
+
+.order-number .label {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.order-number .value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--matcha-primary);
+  font-family: monospace;
+  letter-spacing: 1px;
+}
+
+.order-info-row {
+  display: flex;
+  gap: var(--space-sm);
+  padding: var(--space-sm) 0;
+  color: var(--matcha-primary);
+}
+
+.order-info-row div {
+  display: flex;
+  flex-direction: column;
+}
+
+.info-label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.info-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+.order-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border-light);
+  font-size: 16px;
+  color: var(--text-dark);
+}
+
+.total-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--matcha-primary);
+}
+
+/* Points Earned */
+.points-earned-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  background: linear-gradient(
+    135deg,
+    var(--matcha-primary) 0%,
+    var(--matcha-light) 100%
+  );
+  color: var(--white);
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-md);
+}
+
+.points-earned-icon {
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.points-earned-info {
+  text-align: left;
+}
+
+.points-earned-value {
+  display: block;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.points-earned-label {
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.points-used {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: var(--space-lg);
+}
+
+/* Actions */
+.success-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
