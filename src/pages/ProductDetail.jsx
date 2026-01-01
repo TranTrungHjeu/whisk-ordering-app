@@ -1,8 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Minus, Plus, Bag, Check } from "@phosphor-icons/react";
-import { products } from "../data/products";
 import { useCart } from "../context/CartContext";
+import { api } from "../services/api";
 import "./ProductDetail.css";
 
 export default function ProductDetail() {
@@ -10,26 +10,32 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const { addItem } = useCart();
 
-  const product = useMemo(
-    () => products.find((p) => p.id === Number(id)),
-    [id]
-  );
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const [selectedSize, setSelectedSize] = useState(product?.sizes?.[0] || null);
+  const [selectedSize, setSelectedSize] = useState(null);
   const [selectedToppings, setSelectedToppings] = useState([]);
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
 
-  if (!product) {
-    return (
-      <div className="product-not-found">
-        <p>Sản phẩm không tồn tại</p>
-        <button onClick={() => navigate("/")} className="btn btn-primary">
-          Về trang chủ
-        </button>
-      </div>
-    );
-  }
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const data = await api.getProductById(id);
+        setProduct(data);
+        if (data.sizes && data.sizes.length > 0) {
+          setSelectedSize(data.sizes[0]);
+        }
+      } catch (err) {
+        console.error("Failed to load product", err);
+        setError("Không thể tải thông tin sản phẩm");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProduct();
+  }, [id]);
 
   const toggleTopping = (topping) => {
     setSelectedToppings((prev) => {
@@ -42,21 +48,36 @@ export default function ProductDetail() {
   };
 
   const totalPrice = useMemo(() => {
+    if (!product) return 0;
     const base = product.price;
     const sizePrice = selectedSize?.price || 0;
     const toppingsPrice = selectedToppings.reduce((sum, t) => sum + t.price, 0);
     return (base + sizePrice + toppingsPrice) * quantity;
-  }, [product.price, selectedSize, selectedToppings, quantity]);
+  }, [product, selectedSize, selectedToppings, quantity]);
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat("vi-VN").format(price) + "đ";
   };
 
   const handleAddToCart = () => {
+    if (!product) return;
     addItem(product, selectedSize, selectedToppings, quantity);
     setIsAdded(true);
     setTimeout(() => setIsAdded(false), 2000);
   };
+
+  if (loading) return <div className="loading-screen">Đang tải...</div>;
+
+  if (error || !product) {
+    return (
+      <div className="product-not-found">
+        <p>{error || "Sản phẩm không tồn tại"}</p>
+        <button onClick={() => navigate("/")} className="btn btn-primary">
+          Về trang chủ
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="product-detail-page">

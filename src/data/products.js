@@ -1,3 +1,5 @@
+import { icons } from "../assets/icons";
+
 // Mock products data for WHISK
 export const products = [
   {
@@ -78,6 +80,7 @@ export const products = [
       { name: "Chocolate drizzle", price: 8000 },
     ],
     isPopular: true,
+    isNew: true, // Added for demo
   },
   {
     id: 5,
@@ -138,12 +141,12 @@ export const products = [
 ];
 
 export const categories = [
-  { id: "all", name: "Tất cả", icon: "Grid3X3" },
-  { id: "signature", name: "Signature", icon: "Star" },
-  { id: "specialty", name: "Đặc biệt", icon: "Sparkles" },
-  { id: "frappe", name: "Frappe", icon: "IceCream" },
-  { id: "tea", name: "Trà", icon: "Leaf" },
-  { id: "dessert", name: "Bánh ngọt", icon: "Cake" },
+  { id: "all", name: "Tất cả", icon: icons.coffeeMenu },
+  { id: "signature", name: "Signature", icon: icons.receptionBell },
+  { id: "specialty", name: "Đặc biệt", icon: icons.coffeeMachine },
+  { id: "frappe", name: "Frappe", icon: icons.coldCoffeeCup },
+  { id: "tea", name: "Trà", icon: icons.coffeeCup },
+  { id: "dessert", name: "Bánh ngọt", icon: icons.chocolateCake },
 ];
 
 export const userMock = {

@@ -184,6 +184,21 @@
   opacity: 0;
 }
 
+.animate-slide-up {
+  animation: slide-up 0.6s ease forwards;
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (min-width: 768px) {
   .products-grid {
     grid-template-columns: repeat(3, 1fr);
